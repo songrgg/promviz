@@ -1,0 +1,101 @@
+apiVersion: shipper.booking.com/v1
+kind: Application
+metadata:
+  name: traffic
+  labels:
+    service-directory.service: traffic
+spec:
+  revisionHistoryLimit: 10
+  template:
+    # in production we have clusters all over Europe: these regions can be
+    # considered similar to regions in GCP or AWS. You must specify at least
+    # one region for your application. Running in two or more regions is
+    # highly advisable: otherwise your application will go down if we have
+    # a datacenter-level outage.
+    clusterRequirements:
+      regions:
+      - name: eu-nl
+        replicas: 1
+      - name: eu-uk
+        replicas: 1
+      capabilities:
+      - dlb
+      - firewall
+    chart:
+      name: java
+      version: ^5
+      repoUrl: https://jfrog.booking.com/artifactory/charts/
+    # The values listed below are a subset of all the available values. You can find the full list of
+    # values for java shipper applications in the values.yaml of the java chart in the core-charts repository
+    # https://gitlab.booking.com/bplatform/core-charts/blob/master/official/java/values.yaml
+    # - These values include things like the resource limits, service configuration, etc
+    values:
+      name: traffic
+      replicaCount: 1
+      imagePullPolicy: Always
+      service:
+        dedicatedIPNeeded: "true"
+        hostname: kuhub-traffic-api.anycast.prod.booking.com
+      readinessProbe:
+        httpGet:
+          port: 8080
+      env:
+      - name: SERVER_ROLE
+        value: b-payhub-frontend
+      image:
+        repository: docker.jfrog.booking.com/projects/payhub/traffic
+        tag: CI_COMMIT_SHA
+      resources:
+        limits:
+          ## resources.limits.cpu is the maximum number of cpu cores a single app container is allowed to use
+          cpu: 1500m
+          ## resources.limits.memory is the maximum amount of memory a single app container is allowed to use
+          memory: 100Mi
+
+        requests:
+          ## resource.requests.cpu is the number of cpu cores to exclusively reserve for a single app container
+          cpu: 250m
+          ## resource.requests.memory is the amount of memory to exclusively reserve for a single app container
+          memory: 50Mi
+      lifecycle:
+        preStop:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - sleep 10;
+      sidecars:
+        preStopGracefulShutdown:
+          enabled: true
+        nginx:
+          enabled: true
+          appPort: 8080
+        sysctlv2:
+          enabled: true
+          dependencies:
+          - "Bookings::SysCtl::XML_Feature"
+          - "Bookings::SysCtl::SiteVars"
+          - "Bookings::SysCtl::AccessCtl::PenTestIPs"
+    strategy:
+      steps:
+      - name: staging
+        capacity:
+          incumbent: 100
+          contender: 1
+        traffic:
+          incumbent: 100
+          contender: 0
+      - name: vanguard
+        capacity:
+          incumbent: 90
+          contender: 10
+        traffic:
+          incumbent: 90
+          contender: 10
+      - name: full on
+        capacity:
+          incumbent: 0
+          contender: 100
+        traffic:
+          incumbent: 0
+          contender: 100

@@ -1,0 +1,52 @@
+include:
+  - project: 'deployments/automated-deployment-template'
+    file: 'bplatform-v1-stable.yml'
+
+stages:
+  - build
+  - package
+  - staging
+  - vanguard
+  - full_on
+
+variables:
+  DOCKER_DRIVER: overlay
+  SHIPPER_APPLICATION: traffic
+
+build:
+  stage: package
+  tags:
+    - docker-engine
+  script:
+    - curl https://docs.booking.com/kubernetes/integrations/scripts/setup-docker-credential-plugin.sh  | sh
+    - docker build --pull --build-arg GIT_ACCESS_TOKEN="$GIT_ACCESS_TOKEN" -t docker.jfrog.booking.com/projects/payhub/traffic:$CI_COMMIT_SHA .
+  except:
+    - master
+
+package:
+  stage: package
+  image: docker.jfrog.booking.com/projects/bplatform/booking-java/maven/kaniko:latest
+  tags:
+    - docker
+  script:
+    - echo "{\"auths\":{\"docker.jfrog.booking.com\":{\"username\":\"$ARTIFACTORY_DOCKER_USER\",\"password\":\"$ARTIFACTORY_DOCKER_TOKEN\"}}}" > /kaniko/.docker/config.json
+    # Assuming that your Gitlab project path matches Service Directory project path
+    - executor --context . --build-arg GIT_ACCESS_TOKEN="$GIT_ACCESS_TOKEN" --dockerfile ./Dockerfile --destination docker.jfrog.booking.com/projects/payhub/traffic:$CI_COMMIT_SHA
+  only:
+    - master
+
+# PROD
+"deploy to staging":
+  extends: .staging
+  dependencies:
+    - "package"
+
+"deploy to vanguard":
+  extends: .vanguard
+  dependencies:
+    - "deploy to staging"
+
+"deploy to full on":
+  extends: .full_on
+  dependencies:
+    - "deploy to vanguard"
