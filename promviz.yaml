@@ -1,0 +1,150 @@
+graphName: Booking
+
+dict: ./dict.json
+
+globalLevel:
+#  maxVolume: 1200
+  clusterConnections:
+    - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc=~"(ams|lhr4|fab|fra).*"}) by (envoy_dc, envoy_response_code_class) > 0
+      prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+      source:
+        replacement: INTERNAL
+      target:
+        label: envoy_dc
+      status:
+        label: envoy_response_code_class
+        warningRegex: ^4$
+        dangerRegex: ^5$
+
+clusterLevel:
+  - cluster: ams4
+    serviceConnections:
+      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
+#      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
+        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+        source:
+          label: envoy_server_role
+        target:
+          label: envoy_cluster_name
+          translate: true
+        status:
+          label: envoy_response_code_class
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+  - cluster: lhr4
+    serviceConnections:
+      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="lhr4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
+        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+        source:
+          label: envoy_server_role
+        target:
+          label: envoy_cluster_name
+          translate: true
+        status:
+          label: envoy_response_code_class
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+  - cluster: ams30
+    serviceConnections:
+      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams30", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
+        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+        source:
+          label: envoy_server_role
+        target:
+          label: envoy_cluster_name
+          translate: true
+        status:
+          label: envoy_response_code_class
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+  - cluster: fab4
+    serviceConnections:
+      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="fab4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
+        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+        source:
+          label: envoy_server_role
+        target:
+          label: envoy_cluster_name
+          translate: true
+        status:
+          label: envoy_response_code_class
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+  - cluster: fra3
+    serviceConnections:
+      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="fra3", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
+        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+        source:
+          label: envoy_server_role
+        target:
+          label: envoy_cluster_name
+          translate: true
+        status:
+          label: envoy_response_code_class
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+  - cluster: fra4
+    serviceConnections:
+      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="fra4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
+        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+        source:
+          label: envoy_server_role
+        target:
+          label: envoy_cluster_name
+          translate: true
+        status:
+          label: envoy_response_code_class
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+
+classes:
+  - name: http-server
+    color: rgb(128, 128, 150)
+  - name: grpc-server
+    color: rgb(128, 128, 150)
+  - name: redis
+    color: rgb(150, 128, 128)
+  - name: mongodb
+    color: rgb(128, 150, 128)

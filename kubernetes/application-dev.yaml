@@ -1,0 +1,75 @@
+apiVersion: shipper.booking.com/v1
+kind: Application
+metadata:
+  name: traffic
+  labels:
+    service-directory.service: traffic
+spec:
+  # in dev we don't need to keep any history; instead, we'd like to clean up ASAP.
+  revisionHistoryLimit: 1
+  # this 'template' is a mold for stamping out new Release objects, one per
+  # rollout. Every time you change the template for your Application in the
+  # cluster, Shipper will create a Release and perform a rollout.
+  template:
+    clusterRequirements:
+      regions:
+      - name: eu-nl
+      capabilities: []
+    # a chart is a package of templates for kubernetes configuration files:
+    # https://docs.helm.sh/developing_charts/. Right now you're using the
+    # default Java application chart. As your application grows and becomes
+    # more specialized, you can change this to be a chart specific to your
+    # application. You shouldn't need to change this too often: the most dynamic
+    # parts of the config are contained in 'values'
+    chart:
+      name: java
+      version: ^5
+      repoUrl: https://jfrog.booking.com/artifactory/charts/
+    # 'values' are what the chart templates get as parameters when they render.
+    # Some of these will likely change every rollout as you update the tag of the
+    # docker image you want to deploy.
+    #
+    # The values listed below are a subset of all the available values. You can find the full list of
+    # values for java shipper applications in the values.yaml of the java chart in the core-charts repository
+    # https://gitlab.booking.com/bplatform/core-charts/blob/master/official/java/values.yaml
+    # - These values include things like the resource limits, service configuration, etc
+    values:
+      name: traffic
+      replicaCount: 1
+      dependencies:
+        mysql:
+          sysctl: ro
+      env:
+      - name: SERVER_ROLE
+        value: b-payhub-api
+      image:
+        # this gets swapped out by the Makefile so your dev images go to a repo specific to you
+        repository: PERSONAL_DEV_REPO
+        tag: latest
+      # the chart normally creates two Service objects: one for 'prod' and
+      # one for 'staging'. in dev we turn off the 'staging' one to save on IP
+      # addresses: we haven't leveled up to IPv6 yet.
+      stagingService:
+        enabled: false
+      sidecars:
+        nginx:
+          enabled: true
+        sysctlv2:
+          enabled: true
+          dependencies:
+          - "Bookings::SysCtl::XML_Feature"
+          - "Bookings::SysCtl::SiteVars"
+          - "Bookings::SysCtl::AccessCtl::PenTestIPs"
+    strategy:
+      # in dev we don't need much of a rollout strategy: we want them to
+      # finish as fast as possible
+      steps:
+      - name: full on
+        capacity:
+          # 'incumbent' is the currently running version (if any)
+          incumbent: 0
+          # 'contender' is the version we're rolling out
+          contender: 100
+        traffic:
+          incumbent: 0
+          contender: 100
