@@ -75,6 +75,9 @@ func (c *Connection) QueryLink() string {
 	promURL := strings.TrimSuffix(c.PrometheusURL, "/")
 	escapedQuery := url.QueryEscape(c.Query)
 
+	if strings.Contains(c.PrometheusURL, "graphite") {
+		return "https://grafana.booking.com/d/TerrYOPnz/fintech-live-traffic-notice-link?orgId=1&var-graphiteQuery=aliasSub(scaleToSeconds(movingAverage(fallbackSeries(monitors.servicemesh.envoy.%7Bbk-eu-west2-a,by_az.bk-eu-west2-a%7D.envoy_cluster_name.*.envoy_server_role.*%7Bpay,vcc,bizent,point,wallet,finapi,cardstash,billing,fintooling%7D*.envoy_response_code_class.*.envoy_cluster_upstream_rq_xx.sum,%20constantLine(0)),%20%271m%27),%201),%20%22.*envoy_cluster_name.(.*).envoy_server_role.(.*).envoy_response_code_class.(.*).envoy_cluster_upstream_rq_xx.*%22,%20%22%5C2%20%5C1%20%5C3%22)&from=now-30m&to=now"
+	}
 	return fmt.Sprintf("%s/graph?g0.expr=%s", promURL, escapedQuery)
 }
 

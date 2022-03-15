@@ -3,32 +3,52 @@ graphName: Booking
 dict: ./dict.json
 
 globalLevel:
-#  maxVolume: 1200
+  #  maxVolume: 1200
   clusterConnections:
-    - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc=~"(ams|lhr4|fab|fra).*"}) by (envoy_dc, envoy_response_code_class) > 0
-      prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+    - query: aliasSub(groupByNodes(perSecond(loadbalancers.group.{internal,external,integration,internalpci,externalpci,integrationpci,corporate}_*.*.haproxy.role.{book,bookadmin,app,b-payment-component-castle,b-payments-pay-notifications,xml_mobile,accounts_portal,xml_secure_mobile,xml_secure_distribution}.backend.*{bk-eu-west1-a,lhr4,fab4}*.{hrsp_2xx,hrsp_4xx,hrsp_5xx}),"sumSeries",9),".*hrsp_(.*)xx","INTERNET bk-eu-west1-a \1")
+      prometheusURL: https://graphite-api.booking.com
       source:
-        replacement: INTERNAL
+        label: source
       target:
-        label: envoy_dc
+        label: target
       status:
-        label: envoy_response_code_class
+        label: status
+        warningRegex: ^4$
+        dangerRegex: ^5$
+    - query: aliasSub(groupByNodes(perSecond(loadbalancers.group.{internal,external,integration,internalpci,externalpci,integrationpci,corporate}_*.*.haproxy.role.{book,bookadmin,app,b-payment-component-castle,b-payments-pay-notifications,xml_mobile,accounts_portal,xml_secure_mobile,xml_secure_distribution}.backend.*{bk-eu-west2-a,ams4,ams30}*.{hrsp_2xx,hrsp_4xx,hrsp_5xx}),"sumSeries",9),".*hrsp_(.*)xx","INTERNET bk-eu-west2-a \1")
+      prometheusURL: https://graphite-api.booking.com
+      source:
+        label: source
+      target:
+        label: target
+      status:
+        label: status
+        warningRegex: ^4$
+        dangerRegex: ^5$
+    - query: aliasSub(groupByNodes(perSecond(loadbalancers.group.{internal,external,integration,internalpci,externalpci,integrationpci,corporate}_*.*.haproxy.role.{book,bookadmin,app,b-payment-component-castle,b-payments-pay-notifications,xml_mobile,accounts_portal,xml_secure_mobile,xml_secure_distribution}.backend.*{bk-eu-central1-a,ams4,ams30}*.{hrsp_2xx,hrsp_4xx,hrsp_5xx}),"sumSeries",9),".*hrsp_(.*)xx","INTERNET bk-eu-central1-a \1")
+      prometheusURL: https://graphite-api.booking.com
+      source:
+        label: source
+      target:
+        label: target
+      status:
+        label: status
         warningRegex: ^4$
         dangerRegex: ^5$
 
 clusterLevel:
-  - cluster: ams4
+  - cluster: bk-eu-west2-a
+    maxVolume: 500000
     serviceConnections:
-      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
-#      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
-        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+      - query: aliasSub(groupByNodes(perSecond(loadbalancers.group.{internal,external,integration,internalpci,externalpci,integrationpci,corporate}_*.*.haproxy.role.{book,bookadmin,app,b-payment-component-castle,b-payments-pay-notifications,xml_mobile,accounts_portal,xml_secure_mobile,xml_secure_distribution}.backend.*bk-eu-west2*.{hrsp_2xx,hrsp_4xx,hrsp_5xx}),"sumSeries",6,9),"(.*).hrsp_(.*)xx","INTERNET \1 \2")
+        prometheusURL: https://graphite-api.booking.com
         source:
-          label: envoy_server_role
+          label: source
         target:
-          label: envoy_cluster_name
+          label: target
           translate: true
         status:
-          label: envoy_response_code_class
+          label: status
           warningRegex: ^4$
           dangerRegex: ^5$
         notices:
@@ -38,17 +58,16 @@ clusterLevel:
             severityThreshold:
               warning: 0.01
               error: 0.01
-  - cluster: lhr4
-    serviceConnections:
-      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="lhr4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
-        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+      - query: aliasSub(scaleToSeconds(movingAverage(fallbackSeries(monitors.servicemesh.envoy.{bk-eu-west2-a,by_az.bk-eu-west2-a}.envoy_cluster_name.*{pay,vcc,bizent,point,wallet,finapi,cardstash,billing,fintooling}*.envoy_server_role.*.envoy_response_code_class.*.envoy_cluster_upstream_rq_xx.sum, constantLine(0)), '1m'), 1), ".*envoy_cluster_name.(.*).envoy_server_role.(.*).envoy_response_code_class.(.*).envoy_cluster_upstream_rq_xx.*", "\2 \1 \3")
+        prometheusURL: https://graphite-api.booking.com
         source:
-          label: envoy_server_role
+          label: source
+          translate: true
         target:
-          label: envoy_cluster_name
+          label: target
           translate: true
         status:
-          label: envoy_response_code_class
+          label: status
           warningRegex: ^4$
           dangerRegex: ^5$
         notices:
@@ -58,17 +77,16 @@ clusterLevel:
             severityThreshold:
               warning: 0.01
               error: 0.01
-  - cluster: ams30
-    serviceConnections:
-      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams30", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
-        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+      - query: aliasSub(scaleToSeconds(movingAverage(fallbackSeries(monitors.servicemesh.envoy.{bk-eu-west2-a,by_az.bk-eu-west2-a}.envoy_cluster_name.*.envoy_server_role.*{pay,vcc,bizent,point,wallet,finapi,cardstash,billing,fintooling}*.envoy_response_code_class.*.envoy_cluster_upstream_rq_xx.sum, constantLine(0)), '1m'), 1), ".*envoy_cluster_name.(.*).envoy_server_role.(.*).envoy_response_code_class.(.*).envoy_cluster_upstream_rq_xx.*", "\2 \1 \3")
+        prometheusURL: https://graphite-api.booking.com
         source:
-          label: envoy_server_role
+          label: source
+          translate: true
         target:
-          label: envoy_cluster_name
+          label: target
           translate: true
         status:
-          label: envoy_response_code_class
+          label: status
           warningRegex: ^4$
           dangerRegex: ^5$
         notices:
@@ -78,17 +96,19 @@ clusterLevel:
             severityThreshold:
               warning: 0.01
               error: 0.01
-  - cluster: fab4
+
+  - cluster: bk-eu-west1-a
+    maxVolume: 500000
     serviceConnections:
-      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="fab4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
-        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+      - query: aliasSub(groupByNodes(perSecond(loadbalancers.group.{internal,external,integration,internalpci,externalpci,integrationpci,corporate}_*.*.haproxy.role.{book,bookadmin,app,b-payment-component-castle,b-payments-pay-notifications,xml_mobile,accounts_portal,xml_secure_mobile,xml_secure_distribution}.backend.*bk-eu-west2*.{hrsp_2xx,hrsp_4xx,hrsp_5xx}),"sumSeries",6,9),"(.*).hrsp_(.*)xx","INTERNET \1 \2")
+        prometheusURL: https://graphite-api.booking.com
         source:
-          label: envoy_server_role
+          label: source
         target:
-          label: envoy_cluster_name
+          label: target
           translate: true
         status:
-          label: envoy_response_code_class
+          label: status
           warningRegex: ^4$
           dangerRegex: ^5$
         notices:
@@ -98,17 +118,16 @@ clusterLevel:
             severityThreshold:
               warning: 0.01
               error: 0.01
-  - cluster: fra3
-    serviceConnections:
-      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="fra3", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
-        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+      - query: aliasSub(scaleToSeconds(movingAverage(fallbackSeries(monitors.servicemesh.envoy.{bk-eu-west1-a,by_az.bk-eu-west1-a}.envoy_cluster_name.*{pay,vcc,bizent,point,wallet,finapi,cardstash,billing,fintooling}*.envoy_server_role.*.envoy_response_code_class.*.envoy_cluster_upstream_rq_xx.sum, constantLine(0)), '1m'), 1), ".*envoy_cluster_name.(.*).envoy_server_role.(.*).envoy_response_code_class.(.*).envoy_cluster_upstream_rq_xx.*", "\2 \1 \3")
+        prometheusURL: https://graphite-api.booking.com
         source:
-          label: envoy_server_role
+          label: source
+          translate: true
         target:
-          label: envoy_cluster_name
+          label: target
           translate: true
         status:
-          label: envoy_response_code_class
+          label: status
           warningRegex: ^4$
           dangerRegex: ^5$
         notices:
@@ -118,17 +137,76 @@ clusterLevel:
             severityThreshold:
               warning: 0.01
               error: 0.01
-  - cluster: fra4
-    serviceConnections:
-      - query: sum(envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="fra4", envoy_cluster_name=~".*(pay|walletapi).*"} or envoy_cluster_name_dc_server_role:envoy_cluster_upstream_rq_xx:sum_irate1m{envoy_dc="ams4", envoy_server_role =~".*(pay|walletapi).*"}) by (envoy_response_code_class, envoy_cluster_name, envoy_server_role) > 0
-        prometheusURL: http://servicemesh-prom-101.ams4.prod.booking.com/
+      - query: aliasSub(scaleToSeconds(movingAverage(fallbackSeries(monitors.servicemesh.envoy.{bk-eu-west1-a,by_az.bk-eu-west1-a}.envoy_cluster_name.*.envoy_server_role.*{pay,vcc,bizent,point,wallet,finapi,cardstash,billing,fintooling}*.envoy_response_code_class.*.envoy_cluster_upstream_rq_xx.sum, constantLine(0)), '1m'), 1), ".*envoy_cluster_name.(.*).envoy_server_role.(.*).envoy_response_code_class.(.*).envoy_cluster_upstream_rq_xx.*", "\2 \1 \3")
+        prometheusURL: https://graphite-api.booking.com
         source:
-          label: envoy_server_role
+          label: source
+          translate: true
         target:
-          label: envoy_cluster_name
+          label: target
           translate: true
         status:
-          label: envoy_response_code_class
+          label: status
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+
+  - cluster: bk-eu-central1-a
+    maxVolume: 500000
+    serviceConnections:
+      - query: aliasSub(groupByNodes(perSecond(loadbalancers.group.{internal,external,integration,internalpci,externalpci,integrationpci,corporate}_*.*.haproxy.role.{book,bookadmin,app,b-payment-component-castle,b-payments-pay-notifications,xml_mobile,accounts_portal,xml_secure_mobile,xml_secure_distribution}.backend.*bk-eu-west2*.{hrsp_2xx,hrsp_4xx,hrsp_5xx}),"sumSeries",6,9),"(.*).hrsp_(.*)xx","INTERNET \1 \2")
+        prometheusURL: https://graphite-api.booking.com
+        source:
+          label: source
+        target:
+          label: target
+          translate: true
+        status:
+          label: status
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+      - query: aliasSub(scaleToSeconds(movingAverage(fallbackSeries(monitors.servicemesh.envoy.{bk-eu-central1-a,by_az.bk-eu-central1-a}.envoy_cluster_name.*{pay,vcc,bizent,point,wallet,finapi,cardstash,billing,fintooling}*.envoy_server_role.*.envoy_response_code_class.*.envoy_cluster_upstream_rq_xx.sum, constantLine(0)), '1m'), 1), ".*envoy_cluster_name.(.*).envoy_server_role.(.*).envoy_response_code_class.(.*).envoy_cluster_upstream_rq_xx.*", "\2 \1 \3")
+        prometheusURL: https://graphite-api.booking.com
+        source:
+          label: source
+          translate: true
+        target:
+          label: target
+          translate: true
+        status:
+          label: status
+          warningRegex: ^4$
+          dangerRegex: ^5$
+        notices:
+          - name: HighErrorRate
+            title: "[{{ .value }}] HighErrorRate"
+            statusType: danger
+            severityThreshold:
+              warning: 0.01
+              error: 0.01
+      - query: aliasSub(scaleToSeconds(movingAverage(fallbackSeries(monitors.servicemesh.envoy.{bk-eu-central1-a,by_az.bk-eu-central1-a}.envoy_cluster_name.*.envoy_server_role.*{pay,vcc,bizent,point,wallet,finapi,cardstash,billing,fintooling}*.envoy_response_code_class.*.envoy_cluster_upstream_rq_xx.sum, constantLine(0)), '1m'), 1), ".*envoy_cluster_name.(.*).envoy_server_role.(.*).envoy_response_code_class.(.*).envoy_cluster_upstream_rq_xx.*", "\2 \1 \3")
+        prometheusURL: https://graphite-api.booking.com
+        source:
+          label: source
+          translate: true
+        target:
+          label: target
+          translate: true
+        status:
+          label: status
           warningRegex: ^4$
           dangerRegex: ^5$
         notices:

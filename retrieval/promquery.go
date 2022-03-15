@@ -3,6 +3,8 @@ package retrieval
 import (
 	"context"
 	"fmt"
+	"github.com/nghialv/promviz/graphite"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,9 +21,10 @@ type querier interface {
 }
 
 type promClient struct {
-	addr     string
-	client   api.Client
-	queryAPI prometheus.API
+	addr           string
+	client         api.Client
+	graphiteClient *graphite.Client
+	queryAPI       prometheus.API
 }
 
 type prompool struct {
@@ -49,16 +52,28 @@ func newQuerier(logger *zap.Logger, cfg *config.Config) (*prompool, error) {
 	}
 
 	for addr := range addrs {
-		c, err := api.NewClient(api.Config{Address: addr})
-		if err != nil {
-			return nil, err
+		if strings.Contains(addr, "graphite") {
+			c, err := graphite.NewClient(addr)
+			if err != nil {
+				return nil, err
+			}
+			pq.clients[addr] = &promClient{
+				addr:           addr,
+				graphiteClient: &c,
+			}
+		} else {
+			c, err := api.NewClient(api.Config{Address: addr})
+			if err != nil {
+				return nil, err
+			}
+			a := prometheus.NewAPI(c)
+			pq.clients[addr] = &promClient{
+				addr:     addr,
+				client:   c,
+				queryAPI: a,
+			}
 		}
-		a := prometheus.NewAPI(c)
-		pq.clients[addr] = &promClient{
-			addr:     addr,
-			client:   c,
-			queryAPI: a,
-		}
+
 	}
 	return pq, nil
 }
@@ -70,6 +85,10 @@ func (pp *prompool) Query(ctx context.Context, addr string, query string, ts tim
 
 	if client == nil {
 		return nil, fmt.Errorf("Could not send a query to unknown prometheus addr (addr=%s)", addr)
+	}
+
+	if client.graphiteClient != nil {
+		return client.graphiteClient.Query(ctx, query, ts)
 	}
 	value, _, err := client.queryAPI.Query(ctx, query, ts)
 	return value, err

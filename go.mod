@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/lorehov/graphite-api-client v0.0.0-20190606083154-72ae6e76eca5
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/common v0.32.1
 	github.com/rs/cors v1.8.2
@@ -19,6 +20,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
