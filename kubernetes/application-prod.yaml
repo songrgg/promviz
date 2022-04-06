@@ -3,6 +3,7 @@ kind: Application
 metadata:
   name: traffic
   labels:
+    service-directory.project: payhub
     service-directory.service: traffic
 spec:
   revisionHistoryLimit: 10

@@ -3,6 +3,7 @@ kind: Application
 metadata:
   name: traffic
   labels:
+    service-directory.project: payhub
     service-directory.service: traffic
 spec:
   # in dev we don't need to keep any history; instead, we'd like to clean up ASAP.
