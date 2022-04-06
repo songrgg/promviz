@@ -1,0 +1,59 @@
+---
+name: traffic
+replicaCount: 1
+imagePullPolicy: Always
+service:
+  dedicatedIPNeeded: 'true'
+  hostname: kuhub-traffic-api.anycast.prod.booking.com
+readinessProbe:
+  httpGet:
+    port: 8080
+env:
+  - name: SERVER_ROLE
+    value: b-payhub-frontend
+resources:
+  limits:
+    cpu: 1500m
+    memory: 100Mi
+  requests:
+    cpu: 250m
+    memory: 50Mi
+lifecycle:
+  preStop:
+    exec:
+      command:
+        - /bin/sh
+        - '-c'
+        - sleep 10;
+sidecars:
+  preStopGracefulShutdown:
+    enabled: true
+  nginx:
+    enabled: true
+    appPort: 8080
+  sysctlv2:
+    enabled: true
+    dependencies:
+      - 'Bookings::SysCtl::XML_Feature'
+      - 'Bookings::SysCtl::SiteVars'
+      - 'Bookings::SysCtl::AccessCtl::PenTestIPs'
+meta:
+  labels:
+    service-directory.service: traffic
+    service-directory.project: payhub
+
+---
+kind: HarnessBksRuntimeConfig
+metadata:
+  version: 1.0.0
+clusterRequirements:
+  regions:
+    - name: eu-nl
+      replicas: 1
+    - name: eu-uk
+      replicas: 1
+  capabilities:
+    - dlb
+    - firewall
+chartName: java
+chartVersion: ^5
